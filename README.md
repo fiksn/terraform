@@ -13,7 +13,7 @@ Therefore I prefer [NixOS infect](https://github.com/elitak/nixos-infect) via cl
 [NixOS](https://nixos.org) 20.09.
 
 On [https://app.terraform.io](https://app.terraform.io) I have created a new organization and workspace. What is missing from
-the [Nix.dev tutorial](https://nix.dev/tutorials/deploying-nixos-using-terraform.html() is that [deploy_nixos](https://github.com/tweag/terraform-nixos/tree/master/deploy_nixos#readme)
+the [Nix.dev tutorial](https://nix.dev/tutorials/deploying-nixos-using-terraform.html) is that [deploy_nixos](https://github.com/tweag/terraform-nixos/tree/master/deploy_nixos#readme)
 terraform module requires you to change "General Settings" and set "Execution Mode" to "Local". (And of course have Nix installed locally, which you can do through
 ```
 curl -L https://nixos.org/nix/install | sh
@@ -22,10 +22,19 @@ curl -L https://nixos.org/nix/install | sh
 
 ## Workflow
 
-```
-export DIGITALOCEAN_TOKEN=...
+```bash
+nix-shell -p ipcalc curl terraform 
+export TF_VAR_do_token=...
 terraform init
-terraform apply -var "do_token=${DIGITALOCEAN_TOKEN}"
+terraform apply 
+```
+
+```bash
+# IP stuff
+curl -X GET -H "Content-Type: application/json" -H "Authorization: Bearer $TF_VAR_do_token" "https://api.digitalocean.com/v2/droplets/217977113" 2>/dev/null | jq '.droplet.networks.v4[] | select(.type=="public")'
+
+# NETMASK to CIDR
+ipcalc $1 255.255.0.0 -b | grep Netmask | cut -d"=" -f 2 | tr -d " \n"
 ```
 
 ## References
@@ -39,6 +48,7 @@ Other stuff:
 * [nixos/digital-ocean-image: init (rebase)](https://github.com/NixOS/nixpkgs/pull/66978)
 * [nixos-generators - one config, multiple formats](https://github.com/nix-community/nixos-generators)
 * [Add a Digital Ocean format](https://github.com/nix-community/nixos-generators/pull/47)
+* [Why we use Terraform and not Chef, Puppet, Ansible, SaltStack, or CloudFormation](https://blog.gruntwork.io/why-we-use-terraform-and-not-chef-puppet-ansible-saltstack-or-cloudformation-7989dad2865c)
 
 
 
