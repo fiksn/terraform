@@ -23,18 +23,10 @@ curl -L https://nixos.org/nix/install | sh
 ## Workflow
 
 ```bash
-nix-shell -p ipcalc curl terraform jq
+nix-shell -p ipcalc curl terraform jq # TODO create shell.nix
 export TF_VAR_do_token=...
 terraform init
 terraform apply 
-```
-
-```bash
-# IP stuff
-curl -X GET -H "Content-Type: application/json" -H "Authorization: Bearer $TF_VAR_do_token" "https://api.digitalocean.com/v2/droplets/217977113" 2>/dev/null | jq '.droplet.networks.v4[] | select(.type=="public")'
-
-# NETMASK to CIDR
-ipcalc $1 255.255.0.0 -b | grep Netmask | cut -d"=" -f 2 | tr -d " \n"
 ```
 
 ## References

@@ -27,6 +27,7 @@ module "deploy_nixos" {
       ip4_address = data.external.do_network.result["ip4_address"],
       ip4_gateway = data.external.do_network.result["ip4_gateway"],
       ip4_cidr    = data.external.do_network.result["ip4_cidr"],
+      nix_version = data.external.do_blockable_nix_version.result["nix_version"],
   })
   target_host     = digitalocean_droplet.tf-machine.ipv4_address
   build_on_target = true
@@ -41,7 +42,6 @@ data "external" "do_network" {
   }
 }
 
-/*
 data "external" "do_blockable_nix_version" {
   program = ["${path.module}/do_blockable_nix_version.sh"]
 
@@ -50,7 +50,6 @@ data "external" "do_blockable_nix_version" {
     token = var.do_token
   }
 }
-*/
 
 output "ip4_gateway" {
   value       = data.external.do_network.result["ip4_gateway"]
