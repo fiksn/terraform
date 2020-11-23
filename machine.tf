@@ -78,7 +78,7 @@ output "ip6_address" {
 variable "do_token" {}
 
 variable "root_config" {
-  default = "none"
+  default = "./none"
 }
 
 variable "ssh_key" {

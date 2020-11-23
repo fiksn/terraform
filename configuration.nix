@@ -4,13 +4,12 @@ let
 in
 {
   imports = [
-    #<nixpkgs/nixos/modules/virtualisation/digital-ocean-image.nix> 
+    #<nixpkgs/nixos/modules/virtualisation/digital-ocean-image.nix> Kernel doesn't boot :/
     <nixpkgs/nixos/modules/profiles/qemu-guest.nix>
     ./common.nix
     ./private.nix
-  ];
-  # ++ (if builtins.pathExists ${root_config} then [ $root_config ] else [ ]);
-  
+  ]
+  ++ (if builtins.pathExists ${root_config} then [ ${root_config} ] else [ ]);
 
   boot.loader.grub.device = "/dev/vda";
 
@@ -36,7 +35,7 @@ in
     defaultGateway6 = "${ip6_gateway}";
 
     dhcpcd.enable = false;
-    usePredictableInterfaceNames = lib.mkForce true;
+    usePredictableInterfaceNames = lib.mkForce false;
 
     interfaces = {
       eth0 = {
@@ -66,7 +65,7 @@ in
     defaultGateway = "${ip4_gateway}";
 
     dhcpcd.enable = false;
-    usePredictableInterfaceNames = lib.mkForce true;
+    usePredictableInterfaceNames = lib.mkForce false;
 
     interfaces = {
       eth0 = {
