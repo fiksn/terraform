@@ -23,7 +23,7 @@ curl -L https://nixos.org/nix/install | sh
 ## Workflow
 
 ```bash
-nix-shell -p ipcalc curl terraform jq # TODO create shell.nix
+nix-shell
 export TF_VAR_do_token=...
 terraform init
 terraform apply 
