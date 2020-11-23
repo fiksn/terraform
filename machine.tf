@@ -48,12 +48,18 @@ data "external" "do_blockable_nix_version" {
   query = {
     host = "root@${digitalocean_droplet.tf-machine.ipv4_address}"
     token = var.do_token
+    steps = 1
   }
 }
 
 output "ip4_gateway" {
   value       = data.external.do_network.result["ip4_gateway"]
   description = "The IPv4 gateway"
+}
+
+output "nix_version" {
+  value       = data.external.do_blockable_nix_version.result["nix_version"]
+  description = "Nix version"
 }
 
 variable "do_token" {}

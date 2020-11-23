@@ -7,15 +7,15 @@
       "1.1.1.1"
       "8.8.8.8"
     ];
-    defaultGateway = ${ip4_gateway};
+    defaultGateway = "${ip4_gateway}";
     dhcpcd.enable = false;
     usePredictableInterfaceNames = lib.mkForce true;
     interfaces = {
       eth0 = {
         ipv4.addresses = [
-          { address=${ip4_address}; prefixLength=${ip4_cidr}; }
+          { address="${ip4_address}"; prefixLength=${ip4_cidr}; }
         ];
-        ipv4.routes = [ { address = ${ip4_gateway}; prefixLength = 32; } ];
+        ipv4.routes = [ { address = "${ip4_gateway}"; prefixLength = 32; } ];
       };
     };
   };
@@ -27,15 +27,6 @@
     "${ssh_key}"
   ];
 
-  nix = {
-    binaryCaches = [
-      "https://fiksn.cachix.org"
-      "https://cache.nixos.org/"
-    ];
-    binaryCachePublicKeys = [
-      "fiksn.cachix.org-1:BCEC7wp4PVp/atgIlbBSpNWOuPx7Zq4+cxwRqaMrSOc="
-    ];
-  };
   
 }
 

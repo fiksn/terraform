@@ -11,14 +11,14 @@ function finish {
 trap finish EXIT
 
 curl -X GET -H "Content-Type: application/json" -H "Authorization: Bearer $TOKEN" "https://api.digitalocean.com/v2/droplets/$ID" 2>/dev/null > temp.$$ 
-IP4_ADDRESS=$(cat temp.$$ | jq '.droplet.networks.v4[] | select(.type=="public") | .ip_address')
-IP4_NETMASK=$(cat temp.$$ | jq '.droplet.networks.v4[] | select(.type=="public") | .netmask')
-IP4_GATEWAY=$(cat temp.$$ | jq '.droplet.networks.v4[] | select(.type=="public") | .gateway')
+IP4_ADDRESS=$(cat temp.$$ | jq '.droplet.networks.v4[] | select(.type=="public") | .ip_address' | tr -d '"')
+IP4_NETMASK=$(cat temp.$$ | jq '.droplet.networks.v4[] | select(.type=="public") | .netmask' | tr -d '"')
+IP4_GATEWAY=$(cat temp.$$ | jq '.droplet.networks.v4[] | select(.type=="public") | .gateway' | tr -d '"')
 IP4_CIDR=$(ipcalc 1.3.3.7 $IP4_NETMASK -b | grep Netmask | cut -d"=" -f 2 | tr -d " \n")
 
-IP6_ADDRESS=$(cat temp.$$ | jq '.droplet.networks.v6[] | select(.type=="public") | .ip_address')
-IP6_CIDR=$(cat temp.$$ | jq '.droplet.networks.v6[] | select(.type=="public") | .netmask')
-IP6_GATEWAY=$(cat temp.$$ | jq '.droplet.networks.v6[] | select(.type=="public") | .gateway')
+IP6_ADDRESS=$(cat temp.$$ | jq '.droplet.networks.v6[] | select(.type=="public") | .ip_address' | tr -d '"')
+IP6_CIDR=$(cat temp.$$ | jq '.droplet.networks.v6[] | select(.type=="public") | .netmask' | tr -d '"')
+IP6_GATEWAY=$(cat temp.$$ | jq '.droplet.networks.v6[] | select(.type=="public") | .gateway' | tr -d '"')
 
 rm -rf temp.$$
 
