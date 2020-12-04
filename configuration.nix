@@ -4,17 +4,12 @@ let
 in
 {
   imports = [
-    #<nixpkgs/nixos/modules/virtualisation/digital-ocean-image.nix> Kernel doesn't boot :/
-    <nixpkgs/nixos/modules/profiles/qemu-guest.nix>
-    ./common.nix
-    ./private.nix
+    <nixpkgs/nixos/modules/virtualisation/digital-ocean-image.nix>
   ]
   ++ (if builtins.pathExists ${root_config} then [ ${root_config} ] else [ ]);
 
-  boot.loader.grub.device = "/dev/vda";
-
-  # Not necessary with digital-ocean-image.nix
-  fileSystems."/" = { device = "/dev/vda1"; fsType = "ext4"; };
+  boot.loader.grub.device = lib.mkForce "/dev/vda";
+  fileSystems."/" = lib.mkForce { device = "/dev/vda1"; fsType = "ext4"; };
 
   boot.cleanTmpDir = true;
   networking.firewall.allowPing = true;

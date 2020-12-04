@@ -1,4 +1,5 @@
-#!/bin/bash
+#! /usr/bin/env nix-shell
+#! nix-shell -i bash -p jq -p curl -p ipcalc
 set -euo pipefail
 
 # requires jq, curl and ipcalc

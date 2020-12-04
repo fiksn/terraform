@@ -1,4 +1,6 @@
-#!/bin/bash
+#! /usr/bin/env nix-shell
+#! nix-shell -i bash -p openssh -p jq
+
 set -euo pipefail
 
 # Add steps

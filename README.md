@@ -20,6 +20,15 @@ curl -L https://nixos.org/nix/install | sh
 ```
 ).
 
+## Temp
+
+```
+cat configuration.nix | sed -E 's/[\$][\{][a-zA-Z0-9_-]+[\}]/.\/burek/g' | sed -E 's@([Ll]ength[ ]*=[ ]*)([.].+);@\1 13;@g' > temp.$$
+export NIXOS_CONFIG=$(pwd)/temp.$$
+nix-shell test.nix
+rm -rf temp.$$
+```
+
 ## Workflow
 
 ```bash

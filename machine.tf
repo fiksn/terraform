@@ -6,24 +6,25 @@ resource "digitalocean_droplet" "tf-machine" {
   ipv6   = var.ipv6
 
   ssh_keys = [
-    data.digitalocean_ssh_key.ec.id
+    data.digitalocean_ssh_key.key.id
   ]
 
   user_data = <<EOF
     #cloud-config
       runcmd:
+      # digital ocean servers are 67.207.67.3 67.207.67.2
+      - sed -i 's/127.0.0.53/8.8.8.8/g' /etc/resolv.conf # Get rid of systemd-resolved stuff
       - curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | PROVIDER=digitalocean NIX_CHANNEL=nixos-20.09 bash 2>&1 | tee /tmp/infect.log
   EOF
 }
 
-data "digitalocean_ssh_key" "ec" {
+data "digitalocean_ssh_key" "key" {
   name = var.ssh_key
 }
 
-module "deploy_nixos" {
-  source = "git::https://github.com/tweag/terraform-nixos.git//deploy_nixos?ref=5f5a0408b299874d6a29d1271e9bffeee4c9ca71"
-  config = templatefile("${path.module}/configuration.nix",
-    { ssh_key             = data.digitalocean_ssh_key.ec.public_key,
+locals {
+  nix_config = templatefile("${path.module}/configuration.nix",
+    { ssh_key             = data.digitalocean_ssh_key.key.public_key,
       ip4_address         = data.external.do_network.result["ip4_address"],
       ip4_gateway         = data.external.do_network.result["ip4_gateway"],
       ip4_cidr            = data.external.do_network.result["ip4_cidr"],
@@ -37,6 +38,11 @@ module "deploy_nixos" {
       root_config         = var.root_config,
       name                = var.name,
   })
+}
+
+module "deploy_nixos" {
+  source          = "git::https://github.com/tweag/terraform-nixos.git//deploy_nixos?ref=5f5a0408b299874d6a29d1271e9bffeee4c9ca71"
+  config          = local.nix_config
   target_host     = digitalocean_droplet.tf-machine.ipv4_address
   build_on_target = true
 }
@@ -57,6 +63,18 @@ data "external" "do_blockable_nix_version" {
     host  = "root@${digitalocean_droplet.tf-machine.ipv4_address}"
     token = var.do_token
     steps = 100
+  }
+}
+
+resource "null_resource" "copy_nix_files" {
+  triggers = {
+    nix = module.deploy_nixos.id
+  }
+
+  depends_on = [module.deploy_nixos.id]
+
+  provisioner "local-exec" {
+    command = "echo '${local.nix_config}' > configuration.burek ; ssh root@${digitalocean_droplet.tf-machine.ipv4_address} id"
   }
 }
 
