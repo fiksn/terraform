@@ -9,9 +9,7 @@ let
   users = normalUsers ++ (lib.toList nixos.config.users.users.root);
   normalUsernames = map (x: x.name) normalUsers;
   testRun = "Users:\n" 
-    + check (builtins.length users > 1) "More than 1 user\n"
-    + toString nixos.config.boot.initrd.availableKernelModules + "\n"
-    + lib.concatStringsSep "\n" ((pkgs.callPackage ./burek.nix {}).imports)
+    + check (builtins.length users > 0) "More than 0 users\n"
   ;
 in
 pkgs.mkShell {
