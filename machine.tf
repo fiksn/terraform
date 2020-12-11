@@ -1,5 +1,5 @@
 resource "digitalocean_droplet" "tf-machine" {
-  image  = "ubuntu-20-04-x64"
+  image  = "ubuntu-20-04-x64" # tested with ubuntu 20.04
   name   = var.name
   region = var.region
   size   = var.size
@@ -74,7 +74,7 @@ resource "null_resource" "copy_nix_files" {
   depends_on = [module.deploy_nixos.id]
 
   provisioner "local-exec" {
-    command = "echo '${local.nix_config}' > configuration.burek ; ssh root@${digitalocean_droplet.tf-machine.ipv4_address} id"
+    command = "S=root@${digitalocean_droplet.tf-machine.ipv4_address} ; O='-o ConnectTimeout=2 -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' ; SSH=$(eval echo ssh $O); SCP=$(eval echo scp $O); F=./configuration.temp.$$ ; echo '${local.nix_config}' > $F ; $SSH $S 'rm -rf /etc/nixos ; mkdir -p /etc/nixos'; $SCP $F $S:/etc/nixos/configuration.nix ; nix-shell files.nix --arg file $F | grep -v $F | xargs -n 1 -I {} $SSH $S mkdir -p /etc/nixos/$(pathname {} 2>/dev/null) ; nix-shell files.nix --arg file $F | grep -v $F | xargs -n 1 -I {} $SCP {} $S:/etc/nixos/{} ; rm -rf $F"
   }
 }
 

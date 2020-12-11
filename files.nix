@@ -1,4 +1,4 @@
-{ pkgs ? import <nixpkgs> {}, ... }:
+{ pkgs ? import <nixpkgs> {}, file ? ./configuration.temp, ... }:
 let
   lib = pkgs.lib;
   
@@ -12,7 +12,6 @@ let
 in
 pkgs.mkShell {
   shellHook = ''
-    echo "ssh machine rm -rf /etc/nixos"
-    echo "${getRelativePathsStr ./configuration.burek}" | xargs -n 1 -I {} echo "ssh machine mkdir -p /etc/nixos/$(pathname {} 2>/dev/null) ; scp {} machine:/etc/nixos/{}"
+    echo "${getRelativePathsStr file}"
   '';
 }

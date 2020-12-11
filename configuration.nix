@@ -9,6 +9,7 @@ in
   ++ (if builtins.pathExists ${root_config} then [ ${root_config} ] else [ ]);
 
   boot.loader.grub.device = lib.mkForce "/dev/vda";
+
   fileSystems."/" = lib.mkForce { device = "/dev/vda1"; fsType = "ext4"; };
 
   boot.cleanTmpDir = true;
