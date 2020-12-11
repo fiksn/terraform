@@ -76,6 +76,8 @@ resource "null_resource" "copy_nix_files" {
   provisioner "local-exec" {
     command = "S=root@${digitalocean_droplet.tf-machine.ipv4_address} ; O='-o ConnectTimeout=2 -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' ; SSH=$(eval echo ssh $O); SCP=$(eval echo scp $O); F=./configuration.temp.$$ ; echo '${local.nix_config}' > $F ; $SSH $S 'rm -rf /etc/nixos ; mkdir -p /etc/nixos'; $SCP $F $S:/etc/nixos/configuration.nix ; nix-shell files.nix --arg file $F | grep -v $F | xargs -n 1 -I {} $SSH $S mkdir -p /etc/nixos/$(pathname {} 2>/dev/null) ; nix-shell files.nix --arg file $F | grep -v $F | xargs -n 1 -I {} $SCP {} $S:/etc/nixos/{} ; rm -rf $F"
   }
+
+  count = var.copy_files ? 1 : 0
 }
 
 output "id" {
@@ -116,6 +118,10 @@ variable "size" {
 }
 
 variable "ipv6" {
+  default = true
+}
+
+variable "copy_files" {
   default = true
 }
 

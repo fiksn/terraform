@@ -1,5 +1,5 @@
 #! /usr/bin/env nix-shell
-#! nix-shell -i bash -p bash
+#! nix-shell -i bash -p bash -p terraform
 
 function finish {
   rm -rf temp.$$
@@ -10,3 +10,4 @@ cat configuration.nix | sed -E 's/[\$][\{][a-zA-Z0-9_-]+[\}]/.\/burek/g' | sed -
 export NIXOS_CONFIG=$(pwd)/temp.$$
 nix-shell test.nix
 rm -rf temp.$$
+terraform validate
