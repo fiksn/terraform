@@ -27,7 +27,7 @@ data "digitalocean_ssh_key" "key" {
 }
 
 locals {
-  image  = "ubuntu-20-04-x64" # tested with ubuntu 20.04
+  image = "ubuntu-20-04-x64" # tested with ubuntu 20.04
 
   nix_config = templatefile("${path.module}/configuration.nix",
     { ssh_key             = data.digitalocean_ssh_key.key.public_key,
@@ -46,15 +46,20 @@ locals {
   })
 
   ssh_private_key_file = var.ssh_private_key_file == "" ? "-" : var.ssh_private_key_file
+  ssh_agent            = var.ssh_agent == null ? (local.ssh_private_key != "") : var.ssh_agent
   ssh_private_key      = local.ssh_private_key_file == "-" ? var.ssh_private_key : file(local.ssh_private_key_file)
 }
 
 module "deploy_nixos" {
-  source          = "git::https://github.com/tweag/terraform-nixos.git//deploy_nixos?ref=5f5a0408b299874d6a29d1271e9bffeee4c9ca71"
-  config          = local.nix_config
-  target_user     = var.target_user
-  target_host     = digitalocean_droplet.tf-machine.ipv4_address
-  build_on_target = true
+  source               = "git::https://github.com/tweag/terraform-nixos.git//deploy_nixos?ref=5f5a0408b299874d6a29d1271e9bffeee4c9ca71"
+  config               = local.nix_config
+  target_user          = var.target_user
+  target_host          = digitalocean_droplet.tf-machine.ipv4_address
+  target_port          = var.target_port
+  ssh_private_key_file = var.ssh_private_key_file
+  ssh_agent            = var.ssh_agent
+  build_on_target      = true
+  triggers             = var.triggers
 }
 
 data "external" "do_network" {
@@ -85,6 +90,16 @@ resource "null_resource" "copy_nix_files" {
   }
 
   depends_on = [module.deploy_nixos.id]
+
+  connection {
+    type        = "ssh"
+    host        = digitalocean_droplet.tf-machine.ipv4_address
+    port        = var.target_port
+    user        = var.target_user
+    agent       = local.ssh_agent
+    timeout     = "100s"
+    private_key = local.ssh_private_key == "-" ? "" : local.ssh_private_key
+  }
 
   provisioner "local-exec" {
     interpreter = concat([
