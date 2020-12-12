@@ -1,7 +1,3 @@
-provider "digitalocean" {
-  token = var.do_token
-}
-
 resource "digitalocean_droplet" "tf-machine" {
   image  = local.image
   name   = var.name

@@ -13,6 +13,6 @@
 
   swapDevices = [{ device = "/swapfile"; size = 1024; }];
 
-  environment.systemPackages = with pkgs; [ tcpdump nmap git go curl bash bc coreutils dos2unix htop jq mosh netcat pssh pv pwgen screen strace tmux tshark unzip vim wget telnet rsync ncdu parted docker docker_compose docker-ls skopeo ];
+  environment.systemPackages = with pkgs; [ tcpdump nmap git go curl bash bc coreutils dos2unix htop jq mosh netcat pssh pv pwgen screen strace tmux tshark unzip vim wget telnet rsync ncdu parted docker docker_compose docker-ls ];
   virtualisation.docker.enable = true;
 }

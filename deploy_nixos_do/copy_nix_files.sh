@@ -86,9 +86,18 @@ echo "${nixConfig}" > ${nixConfigFile}
 remoteTempDir=$(ssh "${sshOpts[@]}" "$targetHost" mktemp -d)
 log "Remote temp dir ${remoteTempDir}"
 
+log "Remove /etc/nixos"
 targetHostCmd rm -rf /etc/nixos 
-scp "${sshOpts[@]}" "${nixConfigFile}" "${targetHost}:${remoteTempDir}/configuration.nix"
+
 nix-shell files.nix --arg file "./${nixConfigFile}" | grep -v ${nixConfigFile} | xargs -n 1 -I {} ssh "${sshOpts[@]}" "${targetHost}" mkdir -p ${remoteTempDir}/$(pathname {} 2>/dev/null)
 nix-shell files.nix --arg file "./${nixConfigFile}" | grep -v ${nixConfigFile} | xargs -n 1 -I {} scp "${sshOpts[@]}" {} ${targetHost}:${remoteTempDir}/{}
+# If there is some collision handle it here
+ssh "${sshOpts[@]}" "${targetHost}" mv -f ${remoteTempDir}/configuration.nix ${remoteTempDir}configuration-1.nix || true
+# Make sure real configuration.nix is copied after all other files
+scp "${sshOpts[@]}" "${nixConfigFile}" "${targetHost}:${remoteTempDir}/configuration.nix"
+ssh "${sshOpts[@]}" "${targetHost}" find ${remoteTempDir} -type f -print0 | xargs -0 sed -i 's/configuration.nix/configuration-1.nix/g'
+
+log "Atomic swap to /etc/nixos"
 targetHostCmd mv -f ${remoteTempDir} /etc/nixos
+
 rm -rf ${nixConfigFile}

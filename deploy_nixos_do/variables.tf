@@ -33,6 +33,13 @@ variable "ssh_agent" {
 variable "root_config" {
   description = "Path to private key used to connect to the target_host"
   default     = "./none"
+
+  /*
+  validation {
+    condition     = substr(var.root_config, 0, 2) == "./"
+    error_message = "Root config must start with ./"
+  }
+  */
 }
 
 variable "ssh_key" {
