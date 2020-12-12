@@ -1,5 +1,9 @@
+provider "digitalocean" {
+  token = var.do_token
+}
+
 resource "digitalocean_droplet" "tf-machine" {
-  image  = "ubuntu-20-04-x64" # tested with ubuntu 20.04
+  image  = local.image
   name   = var.name
   region = var.region
   size   = var.size
@@ -23,6 +27,8 @@ data "digitalocean_ssh_key" "key" {
 }
 
 locals {
+  image  = "ubuntu-20-04-x64" # tested with ubuntu 20.04
+
   nix_config = templatefile("${path.module}/configuration.nix",
     { ssh_key             = data.digitalocean_ssh_key.key.public_key,
       ip4_address         = data.external.do_network.result["ip4_address"],
@@ -38,11 +44,15 @@ locals {
       root_config         = var.root_config,
       name                = var.name,
   })
+
+  ssh_private_key_file = var.ssh_private_key_file == "" ? "-" : var.ssh_private_key_file
+  ssh_private_key      = local.ssh_private_key_file == "-" ? var.ssh_private_key : file(local.ssh_private_key_file)
 }
 
 module "deploy_nixos" {
   source          = "git::https://github.com/tweag/terraform-nixos.git//deploy_nixos?ref=5f5a0408b299874d6a29d1271e9bffeee4c9ca71"
   config          = local.nix_config
+  target_user     = var.target_user
   target_host     = digitalocean_droplet.tf-machine.ipv4_address
   build_on_target = true
 }
@@ -56,12 +66,15 @@ data "external" "do_network" {
   }
 }
 
+# This is quite hackish
 data "external" "do_blockable_nix_version" {
   program = ["${path.module}/do_blockable_nix_version.sh"]
 
   query = {
-    host  = "root@${digitalocean_droplet.tf-machine.ipv4_address}"
+    host  = "${var.target_user}@${digitalocean_droplet.tf-machine.ipv4_address}"
     token = var.do_token
+    user  = var.target_user
+    port  = var.target_port
     steps = 100
   }
 }
@@ -74,58 +87,16 @@ resource "null_resource" "copy_nix_files" {
   depends_on = [module.deploy_nixos.id]
 
   provisioner "local-exec" {
-    command = "S=root@${digitalocean_droplet.tf-machine.ipv4_address} ; O='-o ConnectTimeout=2 -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' ; SSH=$(eval echo ssh $O); SCP=$(eval echo scp $O); F=./configuration.temp.$$ ; echo '${local.nix_config}' > $F ; $SSH $S 'rm -rf /etc/nixos ; mkdir -p /etc/nixos'; $SCP $F $S:/etc/nixos/configuration.nix ; nix-shell files.nix --arg file $F | grep -v $F | xargs -n 1 -I {} $SSH $S mkdir -p /etc/nixos/$(pathname {} 2>/dev/null) ; nix-shell files.nix --arg file $F | grep -v $F | xargs -n 1 -I {} $SCP {} $S:/etc/nixos/{} ; rm -rf $F"
+    interpreter = concat([
+      "${path.module}/copy_nix_files.sh",
+      "${local.nix_config}",
+      "${var.target_user}@${digitalocean_droplet.tf-machine.ipv4_address}",
+      var.target_port,
+      local.ssh_private_key == "" ? "-" : local.ssh_private_key,
+      ]
+    )
+    command = "ignoreme"
   }
 
   count = var.copy_files ? 1 : 0
 }
-
-output "id" {
-  value       = digitalocean_droplet.tf-machine.id
-  description = "The id of the server"
-}
-
-output "ip4_address" {
-  value       = data.external.do_network.result["ip4_address"]
-  description = "The IPv4 address of server"
-}
-
-output "ip6_address" {
-  value       = data.external.do_network.result["ip6_address"]
-  description = "The IPv6 address of server"
-}
-
-variable "do_token" {}
-
-variable "root_config" {
-  default = "./none"
-}
-
-variable "ssh_key" {
-  default = "ec"
-}
-
-variable "name" {
-  default = "tf-machine"
-}
-
-variable "region" {
-  default = "fra1"
-}
-
-variable "size" {
-  default = "s-1vcpu-1gb"
-}
-
-variable "ipv6" {
-  default = true
-}
-
-variable "copy_files" {
-  default = true
-}
-
-provider "digitalocean" {
-  token = var.do_token
-}
-
