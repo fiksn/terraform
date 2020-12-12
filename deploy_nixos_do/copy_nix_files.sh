@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# copy-nix-files.sh copies local nix files to the server
+# copy_nix_files.sh copies local nix files to the server
 #
-# Usage: copy-nix-files.sh <nix_config> <host> <port> <private_key>
+# Usage: copy_nix_files.sh <nix_config> <host> <port> <private_key> <replacement_configuration_nix_name>
 set -euo pipefail
 
 ### Defaults ###
@@ -25,6 +25,7 @@ nixConfig=$1
 targetHost="$2"
 targetPort="$3"
 sshPrivateKey="$4"
+replacementName="$5"
 
 sshOpts+=( -o Port="${targetPort}" )
 
@@ -82,6 +83,7 @@ setupControlPath
 
 nixConfigFile="configuration.nix.$$"
 echo "${nixConfig}" > ${nixConfigFile}
+trap 'rm -rf "${nixConfigFile}"' EXIT
 
 remoteTempDir=$(ssh "${sshOpts[@]}" "$targetHost" mktemp -d)
 log "Remote temp dir ${remoteTempDir}"
@@ -89,13 +91,18 @@ log "Remote temp dir ${remoteTempDir}"
 log "Remove /etc/nixos"
 targetHostCmd rm -rf /etc/nixos 
 
+log "Copy other nix files"
 nix-shell files.nix --arg file "./${nixConfigFile}" | grep -v ${nixConfigFile} | xargs -n 1 -I {} ssh "${sshOpts[@]}" "${targetHost}" mkdir -p ${remoteTempDir}/$(pathname {} 2>/dev/null)
 nix-shell files.nix --arg file "./${nixConfigFile}" | grep -v ${nixConfigFile} | xargs -n 1 -I {} scp "${sshOpts[@]}" {} ${targetHost}:${remoteTempDir}/{}
 # If there is some collision handle it here
-ssh "${sshOpts[@]}" "${targetHost}" mv -f ${remoteTempDir}/configuration.nix ${remoteTempDir}configuration-1.nix || true
+log "Salvage possible configuration.nix"
+ssh "${sshOpts[@]}" "${targetHost}" "{ ls ${remoteTempDir}/${replacementName} > /dev/null 2>&1 && exit 1; } || true" # Make sure to fail if there is already some such file
+ssh "${sshOpts[@]}" "${targetHost}" "mv -f ${remoteTempDir}/configuration.nix ${remoteTempDir}/${replacementName} || true"
 # Make sure real configuration.nix is copied after all other files
+log "Copy configuration.nix"
 scp "${sshOpts[@]}" "${nixConfigFile}" "${targetHost}:${remoteTempDir}/configuration.nix"
-ssh "${sshOpts[@]}" "${targetHost}" find ${remoteTempDir} -type f -print0 | xargs -0 sed -i 's/configuration.nix/configuration-1.nix/g'
+log "Patch configuration.nix references"
+ssh "${sshOpts[@]}" "${targetHost}" "find ${remoteTempDir} -type f -print0 | xargs -0 sed -i s@configuration.nix@${replacementName}@g"
 
 log "Atomic swap to /etc/nixos"
 targetHostCmd mv -f ${remoteTempDir} /etc/nixos

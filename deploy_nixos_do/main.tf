@@ -104,6 +104,7 @@ resource "null_resource" "copy_nix_files" {
       "${var.target_user}@${digitalocean_droplet.tf-machine.ipv4_address}",
       var.target_port,
       local.ssh_private_key == "" ? "-" : local.ssh_private_key,
+      var.replacement_name,
       ]
     )
     command = "ignoreme"

@@ -31,8 +31,8 @@ variable "ssh_agent" {
 }
 
 variable "root_config" {
-  description = "Path to private key used to connect to the target_host"
-  default     = "./none"
+  description = "Root configuration name with (e.g. ./configuration.nix)"
+  default     = "./configuration.nix"
 
   /*
   validation {
@@ -70,6 +70,11 @@ variable "ipv6" {
 variable "copy_files" {
   description = "Should the local nix files be copied to /etc/nixos on the droplet (experimental!)"
   default     = true
+}
+
+variable "replacement_name" {
+  description = "What name to use if there is a collision with configuration.nix (only relevant if copy_files is true)"
+  default     = "configuration-1.nix"
 }
 
 variable "triggers" {

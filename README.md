@@ -26,28 +26,18 @@ curl -L https://nixos.org/nix/install | sh
 ```bash
 nix-shell
 export TF_VAR_do_token=...
-export TF_VAR_root_config=./common.nix
 terraform init
 terraform apply 
 ```
 
-Keep in mind that configuration.nix is a terraform template (with placeholders for IPs and stuff like that)! Everything else (specified through root_config and possible includes) are regular nix files and it
-is recommended to treat root_config as your main configuration.nix (common.nix in the example above).
+## Terraform module
+
+This code was refactored to include a proper terraform module [deploy_nixos_do](./deploy_nixos_do).
+I will stay play around with the stuff here but the module API should become more stable eventually.
 
 ## Timing
 
 During my testing it usually took around 10 minutes to fully provision a usable NixOS machine this way.
-
-## Copy of files
-
-There is some ugly hacking going on to copy all relevant .nix files to the server to /etc/nixos too. BEWARE
-```
-nixos-rebuild switch
-```
-on the server might create a different output (due to different nixpkgs on the server vs. locally). It is still useful to
-see what is going on tho.
-
-You can turn that off with "copy_files" variable (by setting it to false).
 
 ## References
 
