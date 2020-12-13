@@ -22,7 +22,7 @@ in
   //
 (if has_ip6 then {
   networking = {
-    hostName = "${name}";
+    hostName = lib.mkOverride 1001 "${name}";
     nameservers = [
       "1.1.1.1"
       "8.8.8.8"
@@ -53,7 +53,7 @@ in
   };
 } else {
   networking = {
-    hostName = "${name}";
+    hostName = lib.mkOverride 1001 "${name}";
     nameservers = [
       "1.1.1.1"
       "8.8.8.8"

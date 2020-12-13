@@ -4,6 +4,8 @@
 # Usage: copy_nix_files.sh <nix_config> <host> <port> <private_key> <replacement_configuration_nix_name>
 set -euo pipefail
 
+scriptPath=$(cd -L -- "$(dirname -- "$0")" && pwd -L)
+
 ### Defaults ###
 
 # will be set later
@@ -92,8 +94,9 @@ log "Remove /etc/nixos"
 targetHostCmd rm -rf /etc/nixos 
 
 log "Copy other nix files"
-nix-shell files.nix --arg file "./${nixConfigFile}" | grep -v ${nixConfigFile} | xargs -n 1 -I {} ssh "${sshOpts[@]}" "${targetHost}" mkdir -p ${remoteTempDir}/$(pathname {} 2>/dev/null)
-nix-shell files.nix --arg file "./${nixConfigFile}" | grep -v ${nixConfigFile} | xargs -n 1 -I {} scp "${sshOpts[@]}" {} ${targetHost}:${remoteTempDir}/{}
+nix-shell ${scriptPath}/files.nix --arg file "./${nixConfigFile}"
+nix-shell ${scriptPath}/files.nix --arg file "./${nixConfigFile}" | grep -v ${nixConfigFile} | xargs -n 1 -I {} ssh "${sshOpts[@]}" "${targetHost}" mkdir -p ${remoteTempDir}/$(pathname {} 2>/dev/null)
+nix-shell ${scriptPath}/files.nix --arg file "./${nixConfigFile}" | grep -v ${nixConfigFile} | xargs -n 1 -I {} scp "${sshOpts[@]}" {} ${targetHost}:${remoteTempDir}/{}
 # If there is some collision handle it here
 log "Salvage possible configuration.nix"
 ssh "${sshOpts[@]}" "${targetHost}" "{ ls ${remoteTempDir}/${replacementName} > /dev/null 2>&1 && exit 1; } || true" # Make sure to fail if there is already some such file
