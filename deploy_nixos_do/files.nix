@@ -2,7 +2,10 @@
 let
   lib = pkgs.lib;
   
-  resolveOne = file: let p = pkgs.callPackage file {}; in lib.filter (x: !lib.hasPrefix "/nix" (builtins.toPath x)) (if lib.hasAttr "imports" p then p.imports else []);
+  # Handle the case when file is not a function
+  openFile = file: let p = import file; in if lib.isAttrs p then (x: p) else p;
+
+  resolveOne = file: let p = pkgs.callPackage (openFile file) {}; in lib.filter (x: !lib.hasPrefix "/nix" (builtins.toPath x)) (if lib.hasAttr "imports" p then p.imports else []);
   tryResolveOne = file: let attempt = builtins.tryEval (resolveOne file); in if !attempt.success then [] else attempt.value;
   #tryResolveOne = file: let dummy = builtins.trace "Filename is ${file}" file; attempt = builtins.tryEval (resolveOne dummy); in if !attempt.success then [] else attempt.value;
 

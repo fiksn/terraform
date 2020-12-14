@@ -23,14 +23,14 @@ in
 (if has_ip6 then {
   networking = {
     hostName = lib.mkOverride 1001 "${name}";
-    nameservers = [
+    nameservers = lib.mkOverride 1001 [
       "1.1.1.1"
       "8.8.8.8"
     ];
-    defaultGateway = "${ip4_gateway}";
-    defaultGateway6 = "${ip6_gateway}";
+    defaultGateway = lib.mkOverride 1001 "${ip4_gateway}";
+    defaultGateway6 = lib.mkOverride 1001 "${ip6_gateway}";
 
-    dhcpcd.enable = false;
+    dhcpcd.enable = lib.mkOverride 1001 false;
     usePredictableInterfaceNames = lib.mkForce false;
 
     interfaces = {
@@ -54,13 +54,13 @@ in
 } else {
   networking = {
     hostName = lib.mkOverride 1001 "${name}";
-    nameservers = [
+    nameservers = lib.mkOverride 1001 [
       "1.1.1.1"
       "8.8.8.8"
     ];
-    defaultGateway = "${ip4_gateway}";
+    defaultGateway = lib.mkOverride 1001 "${ip4_gateway}";
 
-    dhcpcd.enable = false;
+    dhcpcd.enable = lib.mkOverride 1001 false;
     usePredictableInterfaceNames = lib.mkForce false;
 
     interfaces = {

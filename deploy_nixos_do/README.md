@@ -15,7 +15,10 @@ nixos-rebuild switch
 on the server might create a different output (due to different nixpkgs on the server vs. locally). It is still useful to
 see what is going on tho.
 
-You can turn that off with "copy_files" variable (by setting it to false).
+Another issue is that only module dependencies are picked-up this way. So if you import stuff inside your module (or callPackage) that is NOT detected and you will need to manually
+copy those files to the server.
+
+You can turn this whole feature off with "copy_files" variable (by setting it to false).
 
 ## Requirements
 

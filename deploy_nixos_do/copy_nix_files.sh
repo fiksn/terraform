@@ -83,6 +83,8 @@ setupControlPath() {
 
 setupControlPath
 
+marker="deploy_nixos_do"
+
 nixConfigFile="configuration.nix.$$"
 echo "${nixConfig}" > ${nixConfigFile}
 trap 'rm -rf "${nixConfigFile}"' EXIT
@@ -91,11 +93,14 @@ remoteTempDir=$(ssh "${sshOpts[@]}" "$targetHost" mktemp -d)
 log "Remote temp dir ${remoteTempDir}"
 
 log "Remove /etc/nixos"
+targetHostCmd [ -f "/etc/nixos/${marker}" ] && cp -r /etc/nixos ${remoteTempDir} || true
+targetHostCmd chown -R ${LOGNAME} ${remoteTempDir}
 targetHostCmd rm -rf /etc/nixos 
 
 log "Copy other nix files"
 nix-shell ${scriptPath}/files.nix --arg file "./${nixConfigFile}"
-nix-shell ${scriptPath}/files.nix --arg file "./${nixConfigFile}" | grep -v ${nixConfigFile} | xargs -n 1 -I {} ssh "${sshOpts[@]}" "${targetHost}" mkdir -p ${remoteTempDir}/$(pathname {} 2>/dev/null)
+nix-shell ${scriptPath}/files.nix --arg file "./${nixConfigFile}" | grep -v ${nixConfigFile} | xargs -n 1 -I {} ssh "${sshOpts[@]}" "${targetHost}" mkdir -p ${remoteTempDir}/{}
+nix-shell ${scriptPath}/files.nix --arg file "./${nixConfigFile}" | grep -v ${nixConfigFile} | xargs -n 1 -I {} ssh "${sshOpts[@]}" "${targetHost}" rmdir ${remoteTempDir}/{}
 nix-shell ${scriptPath}/files.nix --arg file "./${nixConfigFile}" | grep -v ${nixConfigFile} | xargs -n 1 -I {} scp "${sshOpts[@]}" {} ${targetHost}:${remoteTempDir}/{}
 # If there is some collision handle it here
 log "Salvage possible configuration.nix"
@@ -105,9 +110,11 @@ ssh "${sshOpts[@]}" "${targetHost}" "mv -f ${remoteTempDir}/configuration.nix ${
 log "Copy configuration.nix"
 scp "${sshOpts[@]}" "${nixConfigFile}" "${targetHost}:${remoteTempDir}/configuration.nix"
 log "Patch configuration.nix references"
-ssh "${sshOpts[@]}" "${targetHost}" "find ${remoteTempDir} -type f -print0 | xargs -0 sed -i s@configuration.nix@${replacementName}@g"
+ssh "${sshOpts[@]}" "${targetHost}" "find ${remoteTempDir} -maxdepth 1 -type f -print0 | xargs -0 sed -i s@./configuration.nix@./${replacementName}@g"
 
 log "Atomic swap to /etc/nixos"
+targetHostCmd chown -R root ${remoteTempDir}
 targetHostCmd mv -f ${remoteTempDir} /etc/nixos
+targetHostCmd touch /etc/nixos/${marker}
 
 rm -rf ${nixConfigFile}
