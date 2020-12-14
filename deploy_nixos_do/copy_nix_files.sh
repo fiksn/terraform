@@ -93,18 +93,20 @@ remoteTempDir=$(ssh "${sshOpts[@]}" "$targetHost" mktemp -d)
 log "Remote temp dir ${remoteTempDir}"
 
 log "Remove /etc/nixos"
-targetHostCmd [ -f "/etc/nixos/${marker}" ] && cp -r /etc/nixos ${remoteTempDir} || true
+targetHostCmd /bin/sh -c "test -f /etc/nixos/${marker} && cp -r /etc/nixos/* ${remoteTempDir} || true"
 targetHostCmd chown -R ${LOGNAME} ${remoteTempDir}
 targetHostCmd rm -rf /etc/nixos 
+targetHostCmd rm -rf ${remoteTempDir}/${replacementName}
 
 log "Copy other nix files"
 nix-shell ${scriptPath}/files.nix --arg file "./${nixConfigFile}"
-nix-shell ${scriptPath}/files.nix --arg file "./${nixConfigFile}" | grep -v ${nixConfigFile} | xargs -n 1 -I {} ssh "${sshOpts[@]}" "${targetHost}" mkdir -p ${remoteTempDir}/{}
-nix-shell ${scriptPath}/files.nix --arg file "./${nixConfigFile}" | grep -v ${nixConfigFile} | xargs -n 1 -I {} ssh "${sshOpts[@]}" "${targetHost}" rmdir ${remoteTempDir}/{}
+nix-shell ${scriptPath}/files.nix --arg file "./${nixConfigFile}" | grep -v ${nixConfigFile} | xargs -n 1 -I {} ssh "${sshOpts[@]}" "${targetHost}" "mkdir -p ${remoteTempDir}/{} || true"
+nix-shell ${scriptPath}/files.nix --arg file "./${nixConfigFile}" | grep -v ${nixConfigFile} | xargs -n 1 -I {} ssh "${sshOpts[@]}" "${targetHost}" "rmdir ${remoteTempDir}/{} || true"
 nix-shell ${scriptPath}/files.nix --arg file "./${nixConfigFile}" | grep -v ${nixConfigFile} | xargs -n 1 -I {} scp "${sshOpts[@]}" {} ${targetHost}:${remoteTempDir}/{}
 # If there is some collision handle it here
-log "Salvage possible configuration.nix"
+log "Check if file already exists"
 ssh "${sshOpts[@]}" "${targetHost}" "{ ls ${remoteTempDir}/${replacementName} > /dev/null 2>&1 && exit 1; } || true" # Make sure to fail if there is already some such file
+log "Salvage possible configuration.nix"
 ssh "${sshOpts[@]}" "${targetHost}" "mv -f ${remoteTempDir}/configuration.nix ${remoteTempDir}/${replacementName} || true"
 # Make sure real configuration.nix is copied after all other files
 log "Copy configuration.nix"
